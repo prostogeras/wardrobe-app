@@ -69,7 +69,9 @@ jobs:
           pic = safePic;
           let searchText='';
           let occasion='Повседневный';
-          const favorites=new Set(JSON.parse(localStorage.getItem('kostyaFavs')||'[]'));
+          let favorites;
+          try { favorites = new Set(JSON.parse(localStorage.getItem('kostyaFavs') || '[]')); }
+          catch { favorites = new Set(); localStorage.removeItem('kostyaFavs'); }
           const neutralWords=['чёрн','бел','сер','графит','олив','молоч','беж'];
           const warmWords=['горч','роз','крас'];
           const coolWords=['голуб'];
@@ -105,26 +107,37 @@ jobs:
             document.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>openItem(el.dataset.open));
             document.querySelectorAll('[data-add]').forEach(el=>el.onclick=()=>{const x=byId(el.dataset.add);selected[x.slot]=x.id;renderBuilder();document.querySelector('[data-view=builder]').click()});
             document.querySelectorAll('[data-fav]').forEach(el=>el.onclick=e=>{e.stopPropagation();const id=el.dataset.fav;favorites.has(id)?favorites.delete(id):favorites.add(id);localStorage.setItem('kostyaFavs',JSON.stringify([...favorites]));renderCatalog()});
-            setTimeout(()=>document.querySelectorAll('.pic').forEach(el=>{if(!pos[el.dataset.key]){el.classList.add('fallback-label');el.innerHTML=el.dataset.label||'Фото';}}),50);
           };
           const originalRenderBuilder=renderBuilder;
           renderBuilder=function(){originalRenderBuilder();updateScore();document.querySelectorAll('#occasionRow button').forEach(b=>{b.classList.toggle('active',b.dataset.occ===occasion);b.onclick=()=>{occasion=b.dataset.occ;renderBuilder()}})};
           const search=$('#search');
           if(search){search.addEventListener('input',()=>{searchText=search.value;renderCatalog()});}
           const share=$('#shareLook');
-          if(share)share.onclick=async()=>{const text=`Образ: ${code()||'вещи не выбраны'} · ${occasion}`;if(navigator.share){try{await navigator.share({title:'Гардероб Кости',text})}catch(e){}}else{try{await navigator.clipboard.writeText(text);alert('Описание образа скопировано')}catch(e){}}};
+          if(share)share.onclick=async()=>{const text=`Образ: ${code()||'вещи не выбраны'} · ${occasion}`;if(navigator.share){try{await navigator.share({title:'Гардероб Кости',text})}catch(e){}}else{try{await navigator.clipboard.writeText(text);alert('Описание образа скопировано')}catch(e){alert('Не удалось скопировать описание')}}};
           renderCatalog();renderBuilder();
           '''
           if 'kostyaFavs' not in html:
-              html = html.replace("nav();renderCatalog();renderBuilder();", "nav();renderCatalog();renderBuilder();\n" + enhancement_js)
+              html = html.replace('nav();renderCatalog();renderBuilder();', 'nav();renderCatalog();renderBuilder();' + chr(10) + enhancement_js)
 
-          if "serviceWorker.register" not in html:
-              html = html.replace(
-                  '</script></body></html>',
-                  "if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}\n</script></body></html>"
-              )
+          if 'serviceWorker.register' not in html:
+              sw_code = "if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}"
+              html = html.replace('</script></body></html>', sw_code + chr(10) + '</script></body></html>')
+
           path.write_text(html, encoding='utf-8')
           PY
+      - name: Validate generated HTML and JavaScript
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>(.*?)</script>', html, re.S)
+          if not scripts:
+              raise SystemExit('No inline script found')
+          Path('/tmp/app.js').write_text('\n'.join(scripts), encoding='utf-8')
+          PY
+          node --check /tmp/app.js
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site

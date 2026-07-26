@@ -23,18 +23,69 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Prepare installable app
+      - name: Prepare enhanced installable app
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           path = Path('index.html')
           html = path.read_text(encoding='utf-8')
+
           if 'manifest.webmanifest' not in html:
               html = html.replace(
                   '<meta name="theme-color" content="#171717">',
                   '<meta name="theme-color" content="#171717"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon.svg"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">'
               )
+
+          extra_css = '''
+          .catalog-tools{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:10px}
+          .catalog-tools input{min-width:0;border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;font:inherit;color:var(--text)}
+          .catalog-count{display:flex;align-items:center;padding:0 12px;border-radius:14px;background:#e8e3db;color:var(--muted);font-size:13px;font-weight:700;white-space:nowrap}
+          .card{position:relative}.fav{position:absolute;right:8px;top:8px;z-index:4;width:38px;height:38px;padding:0;border-radius:50%;font-size:20px;background:rgba(255,255,255,.92)}
+          .fav.on{background:#171717;color:#fff}.install-note{margin:0 0 12px;padding:12px 14px;background:#e7e1d8;border:1px solid var(--line);border-radius:16px;font-size:13px;line-height:1.4}
+          .fallback-label{display:flex!important;align-items:center;justify-content:center;text-align:center;padding:18px;font-weight:800;color:#5f5a54;background:linear-gradient(145deg,#ece6de,#d9d1c5)!important;background-image:none!important}
+          '''
+          if '.catalog-tools{' not in html:
+              html = html.replace('</style>', extra_css + '</style>')
+
+          tools = '''<div class="install-note">На iPhone открой сайт в Safari и нажми «Поделиться» → «На экран Домой».</div><div class="catalog-tools"><input id="search" type="search" placeholder="Поиск по названию, цвету или коду"><div class="catalog-count" id="catalogCount">25 вещей</div></div>'''
+          if 'id="search"' not in html:
+              html = html.replace('<div class="toolbar" id="filters"></div>', tools + '<div class="toolbar" id="filters"></div>')
+
+          enhancement_js = r'''
+          const originalPic = pic;
+          function safePic(key, cls='pic'){
+            const item = items.find(x=>x.flatKey===key || x.wornKey===key);
+            const label = item ? `${item.id}<br>${item.name}` : 'Фото';
+            return `<div class="${cls}" data-key="${key||''}" data-label="${label.replace(/"/g,'&quot;')}" style="${picStyle(key)}"></div>`;
+          }
+          pic = safePic;
+          let searchText='';
+          const favorites=new Set(JSON.parse(localStorage.getItem('kostyaFavs')||'[]'));
+          const baseRenderCatalog=renderCatalog;
+          renderCatalog=function(){
+            const cats=['Все','Избранное',...new Set(items.map(x=>x.cat))];
+            $('#filters').innerHTML=cats.map(c=>`<button class="${c===active?'active':''}" data-c="${c}">${c}</button>`).join('');
+            document.querySelectorAll('#filters button').forEach(b=>b.onclick=()=>{active=b.dataset.c;renderCatalog()});
+            const q=searchText.trim().toLowerCase();
+            const list=items.filter(x=>(active==='Все'||(active==='Избранное'&&favorites.has(x.id))||x.cat===active) && (!q||`${x.id} ${x.name} ${x.color} ${x.style}`.toLowerCase().includes(q)));
+            $('#catalogCount').textContent=`${list.length} из ${items.length}`;
+            $('#grid').innerHTML=list.map(x=>`<article class="card"><button class="fav ${favorites.has(x.id)?'on':''}" data-fav="${x.id}" aria-label="Избранное">${favorites.has(x.id)?'♥':'♡'}</button>${pic(x.flatKey)}<div class="info" data-open="${x.id}"><div class="code">${x.id}</div><div class="name">${x.name}</div><div class="meta">${x.color} · ${x.style}</div></div><button class="add" data-add="${x.id}">Добавить в образ</button></article>`).join('') || '<div class="empty" style="grid-column:1/-1">Ничего не найдено.</div>';
+            document.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>openItem(el.dataset.open));
+            document.querySelectorAll('[data-add]').forEach(el=>el.onclick=()=>{const x=byId(el.dataset.add);selected[x.slot]=x.id;renderBuilder();document.querySelector('[data-view=builder]').click()});
+            document.querySelectorAll('[data-fav]').forEach(el=>el.onclick=e=>{e.stopPropagation();const id=el.dataset.fav;favorites.has(id)?favorites.delete(id):favorites.add(id);localStorage.setItem('kostyaFavs',JSON.stringify([...favorites]));renderCatalog()});
+            setTimeout(()=>document.querySelectorAll('.pic').forEach(el=>{
+              const bg=getComputedStyle(el).backgroundImage;
+              if(bg==='none' || !pos[el.dataset.key]){el.classList.add('fallback-label');el.innerHTML=el.dataset.label||'Фото';}
+            }),50);
+          };
+          const search=$('#search');
+          if(search){search.addEventListener('input',()=>{searchText=search.value;renderCatalog()});}
+          renderCatalog();
+          '''
+          if 'kostyaFavs' not in html:
+              html = html.replace("nav();renderCatalog();renderBuilder();", "nav();renderCatalog();renderBuilder();\n" + enhancement_js)
+
           if "serviceWorker.register" not in html:
               html = html.replace(
                   '</script></body></html>',

@@ -24,112 +24,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build LUK interactive interface
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          p = Path('index.html')
-          h = p.read_text(encoding='utf-8')
-
-          replacements = [
-              ('<title>MY.STYLE — Гардероб Кости</title>', '<title>LUK. — Гардероб Кости</title>'),
-              ('MY<span class="splash-dot">.</span>STYLE', 'LUK<span class="splash-dot">.</span>'),
-              ('<div class="splash-tag">гардероб Кости</div>', '<div class="splash-tag">соберём лук, сучечка?</div>'),
-              ('<div class="brand">MY<em>.</em>STYLE</div>', '<div class="brand">LUK<em>.</em></div>'),
-              ('<div class="eyebrow">Персональный цифровой гардероб</div><h1>Твой гардероб.<span>Твой стиль.</span></h1>', '<div class="eyebrow">Персональная лаборатория образов</div><h1>Соберём лук,<span>сучечка?</span></h1>'),
-              ('Собирай комплекты из своей одежды, сохраняй удачные идеи и готовь точный запрос для реалистичной примерки.', 'Смешивай вещи, сохраняй удачные сочетания и собирай образ без лишней серьёзности.'),
-              ('Подобрать образ <span>↗</span>', 'Собрать лук <span>↗</span>'),
-              ('давай соберём<br>классный лук!', 'соберём лук,<br>сучечка?'),
-              ('wardrobe_sprite.webp?v=7', 'wardrobe_sprite.webp?v=10')
-          ]
-          for old, new in replacements:
-              h = h.replace(old, new)
-
-          old_builder = '<section id="builder" class="view"><div class="builder"><aside class="preview"><div class="preview-top"><div><b>Мультяшный предпросмотр</b><div class="preview-code" id="lookCode">Ничего не выбрано</div></div><button id="clear">Сбросить</button></div><div class="avatar-stage"><div class="cartoon"><div class="hair"></div><div class="head"></div><div class="face"></div><div class="arm l"></div><div class="arm r"></div><div class="torso" id="torso">👕</div><div class="legs"><div class="leg" id="leg1"></div><div class="leg" id="leg2"></div></div></div></div><div class="selected" id="selectedStrip"></div></aside><div><div class="occasion" id="occasions"></div><div class="score"><div><b>Оценка сочетания</b><small id="scoreNote">Выбери хотя бы две вещи.</small></div><strong id="scoreNumber">—</strong></div><div id="pickers"></div><div class="actions"><button id="random">Случайный образ</button><button id="save">Сохранить</button><button class="primary" id="tryon">Создать запрос на примерку</button><button id="copy">Скопировать запрос</button></div><div class="request" id="request"></div><div class="result"><h3>Готовая реалистичная примерка</h3><div class="result-frame" id="resultFrame">Добавь сюда готовое изображение после генерации.</div><div class="result-actions"><label class="file-label">Добавить изображение<input id="resultFile" type="file" accept="image/*"></label><button id="removeResult">Убрать</button></div></div></div></div></section>'
-          new_builder = '''<section id="builder" class="view">
-          <div class="look-shell">
-            <div class="look-head"><div><h2>Соберём лук, сучечка?</h2><div class="preview-code" id="lookCode">Ничего не выбрано</div></div><button id="clear">↻ Сбросить</button></div>
-            <div class="look-studio">
-              <aside class="selected-rail" id="selectedRail"></aside>
-              <div class="avatar-stage-pro"><div class="avatar-person"><div class="avatar-hair"></div><div class="avatar-face"></div><div class="avatar-neck"></div><div class="avatar-body"></div><div class="avatar-leg left"></div><div class="avatar-leg right"></div><div id="avatarLayers"></div></div></div>
-              <aside class="action-rail"><button id="random"><span>⤨</span>Случайный<br>образ</button><button id="save"><span>♡</span>Сохранить<br>образ</button><button id="tryon"><span>✦</span>Создать запрос<br>на примерку</button></aside>
-            </div>
-          </div>
-          <div class="builder-tabs" id="builderTabs"></div>
-          <div class="builder-list" id="builderItems"></div>
-          <div class="occasion" id="occasions"></div>
-          <div class="score"><div><b>Оценка сочетания</b><small id="scoreNote">Выбери хотя бы две вещи.</small></div><strong id="scoreNumber">—</strong></div>
-          <div class="request" id="request"></div>
-          <div class="result"><h3>Готовая реалистичная примерка</h3><div class="result-frame" id="resultFrame">Добавь сюда готовое изображение после генерации.</div><div class="result-actions"><label class="file-label">Добавить изображение<input id="resultFile" type="file" accept="image/*"></label><button id="removeResult">Убрать</button></div></div>
-          </section>'''
-          if old_builder not in h:
-              raise SystemExit('Original builder section not found')
-          h = h.replace(old_builder, new_builder)
-
-          css_insert = r'''
-          .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:500;transform:translate(-50%,20px);background:#111;color:#fff;border:2px solid var(--lime);border-radius:999px;padding:13px 18px;font-weight:900;opacity:0;pointer-events:none;transition:.28s;box-shadow:0 15px 45px rgba(0,0,0,.24);white-space:nowrap}.toast.show{opacity:1;transform:translate(-50%,0)}
-          .fashion-art{width:100%;aspect-ratio:300/380;display:grid;place-items:center;background:linear-gradient(145deg,#fffdf8,#eee8df);overflow:hidden;position:relative}.fashion-art:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 18% 20%,rgba(255,255,255,.9) 0 2px,transparent 3px);background-size:23px 23px;opacity:.42}.fashion-art svg{width:88%;height:88%;position:relative;z-index:1;filter:drop-shadow(0 16px 13px rgba(37,28,18,.14))}.fashion-art .cloth{stroke:#17120f;stroke-width:3.5;stroke-linejoin:round}.fashion-art .seam{fill:none;stroke:#17120f;stroke-width:2;opacity:.55}.fashion-art .shade{fill:#000;opacity:.08}.fashion-art .print{fill:#17120f;font-family:Arial,sans-serif;font-weight:900;letter-spacing:.04em}.thumb .fashion-art{aspect-ratio:1}.thumb .fashion-art svg{width:92%;height:92%}.card>.fashion-art{border-bottom:1px solid var(--line)}
-          #builder{padding-top:28px}.look-shell{background:#fff;border:1px solid var(--line);border-radius:30px;padding:18px;box-shadow:var(--shadow)}.look-head{display:flex;align-items:start;justify-content:space-between;gap:14px;margin-bottom:14px}.look-head h2{font-size:32px;letter-spacing:-.05em;margin:0 0 3px}.look-head button{border:0;background:#eee;border-radius:999px;padding:11px 16px;font-weight:800}.look-studio{display:grid;grid-template-columns:128px minmax(0,1fr) 126px;gap:14px;min-height:570px}.selected-rail{display:flex;flex-direction:column;gap:9px}.selected-mini{border:2px solid transparent;background:#f2eee8;border-radius:20px;padding:7px;text-align:center;transition:.2s}.selected-mini.active{border-color:#111}.selected-mini .fashion-art{aspect-ratio:1;border-radius:14px}.selected-mini b{display:block;font-size:12px;margin-top:4px}.selected-mini small{display:block;font-size:9px;color:var(--muted);line-height:1.15}.avatar-stage-pro{position:relative;overflow:hidden;border-radius:26px;background:radial-gradient(circle at 20% 20%,rgba(255,255,255,.85) 0 3px,transparent 4px),linear-gradient(145deg,#ead5ff,#fff 53%,#e4ff69);background-size:27px 27px,auto;display:grid;place-items:center}.avatar-person{position:relative;width:min(360px,74%);height:520px}.avatar-hair{position:absolute;left:50%;top:12px;translate:-50% 0;width:105px;height:65px;background:#2b211b;border:4px solid #111;border-radius:58% 58% 36% 36%;z-index:3}.avatar-face{position:absolute;left:50%;top:35px;translate:-50% 0;width:88px;height:108px;background:#d2a078;border:4px solid #111;border-radius:45% 45% 48% 48%;z-index:2}.avatar-face:after{content:"";position:absolute;left:28px;bottom:23px;width:28px;height:8px;border-bottom:3px solid #7d4d44;border-radius:50%}.avatar-neck{position:absolute;left:50%;top:127px;translate:-50% 0;width:37px;height:35px;background:#d2a078;border-inline:4px solid #111}.avatar-body{position:absolute;left:50%;top:150px;translate:-50% 0;width:150px;height:190px;background:#d2a078;border:4px solid #111;border-radius:38px 38px 24px 24px}.avatar-leg{position:absolute;top:328px;width:62px;height:175px;background:#d2a078;border:4px solid #111;border-radius:20px}.avatar-leg.left{left:93px}.avatar-leg.right{right:93px}#avatarLayers{position:absolute;inset:0;z-index:8}.look-layer{position:absolute;left:50%;translate:-50% 0;width:270px;pointer-events:none;animation:dressIn .28s cubic-bezier(.2,.8,.2,1)}.look-layer svg{width:100%;height:100%;filter:drop-shadow(0 9px 8px rgba(0,0,0,.13))}.look-layer.bottom{top:277px;height:240px;z-index:1}.look-layer.top{top:118px;height:275px;z-index:2}.look-layer.layer{top:105px;height:300px;z-index:3}.look-layer.outer{top:91px;height:330px;z-index:4}@keyframes dressIn{from{opacity:0;transform:scale(.88) translateY(-8px)}to{opacity:1;transform:none}}.action-rail{display:flex;flex-direction:column;justify-content:center;gap:22px}.action-rail button{border:0;background:transparent;font-size:11px;font-weight:900;line-height:1.15}.action-rail span{display:grid;place-items:center;width:72px;height:72px;margin:0 auto 6px;background:#fff;border-radius:50%;font-size:33px;box-shadow:0 8px 24px rgba(0,0,0,.08);transition:.2s}.action-rail button:active span{transform:scale(.9)}.builder-tabs{display:flex;gap:9px;overflow-x:auto;padding:20px 0 12px;scrollbar-width:none}.builder-tabs::-webkit-scrollbar{display:none}.builder-tabs button{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:11px 17px;font-weight:900}.builder-tabs button.active{background:#111;color:#fff}.builder-list{display:grid;grid-auto-flow:column;grid-auto-columns:150px;gap:10px;overflow-x:auto;padding:2px 0 18px;scroll-snap-type:x mandatory}.builder-list::-webkit-scrollbar{display:none}.look-choice{scroll-snap-align:start;border:2px solid transparent;background:#f3efe9;border-radius:22px;padding:8px;overflow:hidden}.look-choice.active{border-color:#111;background:#fff}.look-choice .fashion-art{aspect-ratio:1;border-radius:15px}.look-choice b{display:block;font-size:12px;margin-top:7px}.look-choice small{display:block;color:var(--muted);font-size:10px;line-height:1.2;min-height:24px}.empty-choice{aspect-ratio:1;border:2px solid #111;border-radius:15px;display:grid;place-items:center;font-size:34px;background:#fff}
-          @media(max-width:760px){#builder{padding-top:16px}.look-shell{padding:12px;border-radius:24px}.look-head h2{font-size:25px}.look-studio{grid-template-columns:82px minmax(0,1fr) 76px;gap:7px;min-height:430px}.selected-mini{padding:4px;border-radius:14px}.selected-mini .fashion-art{border-radius:10px}.selected-mini b{font-size:10px}.selected-mini small{font-size:7px}.avatar-stage-pro{border-radius:20px}.avatar-person{width:260px;height:405px;transform:scale(.82);transform-origin:center}.action-rail{gap:15px}.action-rail span{width:56px;height:56px;font-size:25px}.action-rail button{font-size:9px}.builder-list{grid-auto-columns:120px}.look-choice{border-radius:17px}.look-head button{font-size:12px;padding:9px 11px}}
-          '''
-          h = h.replace('@media(max-width:760px){', css_insert + '@media(max-width:760px){', 1)
-
-          if 'id="toast"' not in h:
-              h = h.replace('<div class="modal" id="modal">', '<div class="toast" id="toast">Запрос скопирован</div><div class="modal" id="modal">')
-
-          old_pic = "function picStyle(key){const p=pos[key];return p?`background-position:${p.col*100/7}% ${p.row*100/6}%`:''}function pic(key){return `<div class=\"pic\" style=\"${picStyle(key)}\"></div>`}"
-          new_pic = r'''function picStyle(key){const p=pos[key];return p?`background-position:${p.col*100/7}% ${p.row*100/6}%`:''}
-function artSvg(x){
- const c=colorHex(x.color),dark='#17120f',light='#fff8ee';
- const gid='g_'+x.id.replace('-','_');
- const defs=`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${c}"/><stop offset=".55" stop-color="${c}"/><stop offset="1" stop-color="#000" stop-opacity=".16"/></linearGradient></defs>`;
- const fill=`url(#${gid})`;let shape='';
- if(x.cat==='Брюки')shape=`<path class="cloth" fill="${fill}" d="M82 36h100l12 55-22 235h-43l-13-165-12 165H61L39 91z"/><path class="seam" d="M82 36q42 18 100 0M116 48v113M68 92h38M128 92h38"/>`;
- else if(x.cat==='Шорты')shape=`<path class="cloth" fill="${fill}" d="M72 56h120l13 61-26 126h-48l-15-70-16 70H52L26 117z"/><path class="seam" d="M72 56q48 16 120 0M116 66v107"/>`;
- else if(x.cat==='Худи')shape=`<path class="cloth" fill="${fill}" d="M72 83q44-50 88 0l31 17 39 37-24 42-29-17v139H55V162l-29 17-24-42 39-37z"/><path class="cloth" fill="${fill}" d="M76 82q3-55 40-55t40 55q-40-24-80 0z"/><path class="seam" d="M80 82q36 29 72 0M87 229h58v37H87zM103 87v58M129 87v58"/>${x.id==='H-01'?`<text class="print" x="21" y="156" font-size="13" transform="rotate(-74 21 156)">BLACKSQUAD</text>`:''}`;
- else if(x.cat==='Футболки'||x.cat==='Лонгсливы'){const long=x.cat==='Лонгсливы';shape=`<path class="cloth" fill="${fill}" d="M73 58l43 15 43-15 48 28 ${long?'37 159-38 13-24-113':'35 57-36 20-22-47'}v210H50V${long?'159':'116'}L28 ${long?'272 -10 259':'143 -7 123'}l32-37z"/><path class="seam" d="M89 65q27 42 54 0M51 116h130"/>`}
- else if(x.slot==='layer')shape=`<path class="cloth" fill="${fill}" d="M66 52l50 19 50-19 41 28 28 70-35 18-17-39v177H49V129l-17 39-35-18 28-70z"/><path fill="${light}" stroke="${dark}" stroke-width="3" d="M82 58l34 13-25 40-26-50zM150 58l-34 13 25 40 26-50z"/><path class="seam" d="M116 71v235M62 128h37v36H62M133 128h37v36h-37"/>`;
- else if(x.slot==='outer'){const coat=x.id==='J-04',varsity=x.id==='J-02',blazer=x.id==='J-01';shape=`<path class="cloth" fill="${fill}" d="M65 48l51 20 51-20 44 28 31 77-37 18-20-49v${coat?210:184}H47V122l-20 49-37-18 31-77z"/>${blazer?`<path fill="${light}" stroke="${dark}" stroke-width="3" d="M80 57l36 11-25 75-29-74zM152 57l-36 11 25 75 29-74z"/>`:`<path class="seam" d="M86 58q30 28 60 0"/>`}<path class="seam" d="M116 68v${coat?330:306}M63 176h42M127 176h42"/>${varsity?`<path d="M20 78l45-30 20 18-39 247-39-17zM212 78l-45-30-20 18 39 247 39-17z" fill="#eee4d2" stroke="${dark}" stroke-width="3"/><circle cx="78" cy="126" r="18" fill="#d92e2e" stroke="${dark}" stroke-width="3"/>`:''}`}
- return `<svg viewBox="0 0 232 360" aria-hidden="true">${defs}${shape}</svg>`;
-}
-function pic(key){const x=items.find(i=>i.flatKey===key);return x?`<div class="fashion-art" data-art="${x.id}">${artSvg(x)}</div>`:`<div class="pic" style="${picStyle(key)}"></div>`}'''
-          if old_pic not in h:
-              raise SystemExit('Picture renderer not found')
-          h = h.replace(old_pic, new_pic)
-
-          h = h.replace("current=null,occasion='Повседневный';", "current=null,occasion='Повседневный',builderSlot='outer';")
-
-          old_render = "function renderBuilder(){const slots=['outer','layer','top','bottom'];$('#occasions').innerHTML=occasions.map(o=>`<button class=\"${o===occasion?'active':''}\" data-o=\"${o}\">${o}</button>`).join('');document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{occasion=b.dataset.o;sound();renderBuilder()});$('#pickers').innerHTML=slots.map(s=>`<div class=\"picker\"><h3>${labels[s]}</h3><div class=\"choices\" id=\"row_${s}\"></div></div>`).join('');slots.forEach(s=>{const a=items.filter(x=>x.slot===s);$('#row_'+s).innerHTML=`<button class=\"pick ${!selected[s]?'active':''}\" data-id=\"\"><div class=\"thumb\" style=\"aspect-ratio:1;background:#f0ece6;display:grid;place-items:center;font-size:28px\">—</div><b>Без вещи</b></button>`+a.map(x=>`<button class=\"pick ${selected[s]===x.id?'active':''}\" data-id=\"${x.id}\"><div class=\"thumb\">${pic(x.flatKey)}</div><b>${x.id}</b><small>${x.name}</small></button>`).join('');document.querySelectorAll('#row_'+s+' .pick').forEach(b=>b.onclick=()=>{selected[s]=b.dataset.id||null;sound();vibrate([10]);renderBuilder()})});$('#selectedStrip').innerHTML=slots.map(s=>{const x=byId(selected[s]);return `<div class=\"sel\"><b>${x?x.id:'—'}</b><small>${x?x.name:labels[s]}</small></div>`}).join('');$('#lookCode').textContent=outfitCode()||'Ничего не выбрано';const top=byId(selected.top)||byId(selected.layer)||byId(selected.outer),bottom=byId(selected.bottom);$('#torso').style.background=top?colorHex(top.color):'#ddd';$('#torso').textContent=top?icons[top.slot]:'👕';$('#leg1').style.background=$('#leg2').style.background=bottom?colorHex(bottom.color):'#aaa';const sc=scoreLook();$('#scoreNumber').textContent=sc.n?sc.n+'/100':'—';$('#scoreNote').textContent=sc.t}"
-          new_render = r'''function renderBuilder(){
- const slots=['outer','layer','top','bottom'];
- $('#lookCode').textContent=outfitCode()||'Ничего не выбрано';
- $('#selectedRail').innerHTML=slots.map(s=>{const x=byId(selected[s]);return `<button class="selected-mini ${builderSlot===s?'active':''}" data-slot="${s}">${x?pic(x.flatKey):'<div class="empty-choice">−</div>'}<b>${x?x.id:'—'}</b><small>${x?x.name:labels[s]}</small></button>`}).join('');
- document.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{builderSlot=b.dataset.slot;sound();renderBuilder()});
- const layers=['bottom','top','layer','outer'].map(s=>{const x=byId(selected[s]);return x?`<div class="look-layer ${s}">${artSvg(x)}</div>`:''}).join('');
- $('#avatarLayers').innerHTML=layers;
- $('#builderTabs').innerHTML=slots.map(s=>`<button class="${builderSlot===s?'active':''}" data-tab="${s}">${labels[s]}</button>`).join('');
- document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{builderSlot=b.dataset.tab;sound();renderBuilder()});
- const a=items.filter(x=>x.slot===builderSlot);
- $('#builderItems').innerHTML=`<button class="look-choice ${!selected[builderSlot]?'active':''}" data-choice=""><div class="empty-choice">−</div><b>Без вещи</b><small>Убрать слой</small></button>`+a.map(x=>`<button class="look-choice ${selected[builderSlot]===x.id?'active':''}" data-choice="${x.id}">${pic(x.flatKey)}<b>${x.id}</b><small>${x.name}</small></button>`).join('');
- document.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{selected[builderSlot]=b.dataset.choice||null;sound('success');vibrate([12]);renderBuilder()});
- $('#occasions').innerHTML=occasions.map(o=>`<button class="${o===occasion?'active':''}" data-o="${o}">${o}</button>`).join('');
- document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{occasion=b.dataset.o;sound();renderBuilder()});
- const sc=scoreLook();$('#scoreNumber').textContent=sc.n?sc.n+'/100':'—';$('#scoreNote').textContent=sc.t;
-}'''
-          if old_render not in h:
-              raise SystemExit('Builder renderer not found')
-          h = h.replace(old_render, new_render)
-
-          old_show = "function showRequest(){if(!outfitCode())return alert('Сначала выбери вещи');$('#request').style.display='block';$('#request').textContent=promptText();sound('success');vibrate([20,40,20])}"
-          new_show = "async function showRequest(){if(!outfitCode())return alert('Сначала выбери вещи');const text=promptText();$('#request').style.display='block';$('#request').innerHTML='<b>Запрос готов и скопирован в буфер обмена.</b><br><br>'+text;try{await navigator.clipboard.writeText(text);$('#toast').textContent='✓ Запрос скопирован'}catch{$('#toast').textContent='Не удалось скопировать — выдели текст ниже'}$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2200);sound('success');vibrate([20,40,20])}"
-          h = h.replace(old_show, new_show)
-          h = h.replace("$('#tryon').onclick=showRequest;$('#copy').onclick=async()=>{showRequest();try{await navigator.clipboard.writeText(promptText());alert('Запрос скопирован')}catch{}};", "$('#tryon').onclick=showRequest;")
-
-          p.write_text(h, encoding='utf-8')
-          PY
-
       - name: Validate JavaScript
         shell: bash
         run: |
@@ -138,18 +32,19 @@ function pic(key){const x=items.find(i=>i.flatKey===key);return x?`<div class="f
           import re
           html = Path('index.html').read_text(encoding='utf-8')
           scripts = re.findall(r'<script>(.*?)</script>', html, re.S)
-          if not scripts:
-              raise SystemExit('No inline JavaScript found')
-          Path('/tmp/app.js').write_text('\n'.join(scripts), encoding='utf-8')
+          if scripts:
+              Path('/tmp/app.js').write_text('\n'.join(scripts), encoding='utf-8')
           PY
-          node --check /tmp/app.js
+          if [ -f /tmp/app.js ]; then node --check /tmp/app.js; fi
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

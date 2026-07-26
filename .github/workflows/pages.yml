@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Apply LUK interface update
+      - name: Apply LUK interface and fashion illustrations
         shell: bash
         run: |
           python - <<'PY'
@@ -42,7 +42,7 @@ jobs:
               ('Подобрать образ <span>↗</span>', 'Собрать лук <span>↗</span>'),
               ('давай соберём<br>классный лук!', 'соберём лук,<br>сучечка?'),
               ('<b>Мультяшный предпросмотр</b>', '<b>Твой лук</b>'),
-              ('wardrobe_sprite.webp?v=7', 'wardrobe_sprite.webp?v=8')
+              ('wardrobe_sprite.webp?v=7', 'wardrobe_sprite.webp?v=9')
           ]
           for old, new in replacements:
               h = h.replace(old, new)
@@ -51,11 +51,39 @@ jobs:
           new_actions = '<div class="selected" id="selectedStrip"></div><div class="preview-actions"><button id="random">Случайный образ</button><button id="save">Сохранить</button><button class="primary" id="tryon">Создать запрос на примерку</button></div></aside><div><div class="occasion" id="occasions"></div><div class="score"><div><b>Оценка сочетания</b><small id="scoreNote">Выбери хотя бы две вещи.</small></div><strong id="scoreNumber">—</strong></div><div id="pickers"></div><div class="request" id="request"></div>'
           h = h.replace(old_actions, new_actions)
 
-          css_insert = '.preview-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.preview-actions button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:13px 9px;font-weight:900}.preview-actions .primary{grid-column:1/-1;background:#111;color:#fff;border-color:#111;box-shadow:0 5px 0 var(--lime)}.pic{position:relative;isolation:isolate;filter:saturate(1.22) contrast(1.08) brightness(1.03);background-color:#f6f1e9!important}.pic:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,rgba(255,255,255,.08) 0 2px,rgba(0,0,0,.035) 2px 3px,transparent 3px 8px);mix-blend-mode:soft-light;opacity:.8}.card>.pic,.thumb .pic,.viewer .pic,.collage-card{filter:saturate(1.25) contrast(1.1) brightness(1.04);box-shadow:inset 0 0 0 2px rgba(17,17,17,.06)}.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:500;transform:translate(-50%,20px);background:#111;color:#fff;border:2px solid var(--lime);border-radius:999px;padding:13px 18px;font-weight:900;opacity:0;pointer-events:none;transition:.28s;box-shadow:0 15px 45px rgba(0,0,0,.24);white-space:nowrap}.toast.show{opacity:1;transform:translate(-50%,0)}'
-          if '.preview-actions{' not in h:
+          css_insert = '''
+.preview-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.preview-actions button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:13px 9px;font-weight:900}.preview-actions .primary{grid-column:1/-1;background:#111;color:#fff;border-color:#111;box-shadow:0 5px 0 var(--lime)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:500;transform:translate(-50%,20px);background:#111;color:#fff;border:2px solid var(--lime);border-radius:999px;padding:13px 18px;font-weight:900;opacity:0;pointer-events:none;transition:.28s;box-shadow:0 15px 45px rgba(0,0,0,.24);white-space:nowrap}.toast.show{opacity:1;transform:translate(-50%,0)}
+.fashion-art{width:100%;aspect-ratio:300/380;display:grid;place-items:center;background:linear-gradient(145deg,#fffdf8,#eee8df);overflow:hidden;position:relative}.fashion-art:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 18% 20%,rgba(255,255,255,.9) 0 2px,transparent 3px);background-size:23px 23px;opacity:.42}.fashion-art svg{width:88%;height:88%;position:relative;z-index:1;filter:drop-shadow(0 16px 13px rgba(37,28,18,.14))}.fashion-art .cloth{stroke:#17120f;stroke-width:3.5;stroke-linejoin:round}.fashion-art .seam{fill:none;stroke:#17120f;stroke-width:2;opacity:.55}.fashion-art .shade{fill:#000;opacity:.08}.fashion-art .print{fill:#17120f;font-family:Arial,sans-serif;font-weight:900;letter-spacing:.04em}.thumb .fashion-art{aspect-ratio:1}.thumb .fashion-art svg{width:92%;height:92%}.card>.fashion-art{border-bottom:1px solid var(--line)}
+'''
+          if '.fashion-art{' not in h:
               h = h.replace('@media(max-width:760px){', css_insert + '@media(max-width:760px){')
           if 'id="toast"' not in h:
               h = h.replace('<div class="modal" id="modal">', '<div class="toast" id="toast">Запрос скопирован</div><div class="modal" id="modal">')
+
+          old_pic = "function picStyle(key){const p=pos[key];return p?`background-position:${p.col*100/7}% ${p.row*100/6}%`:''}function pic(key){return `<div class=\"pic\" style=\"${picStyle(key)}\"></div>`}"
+          new_pic = r'''function picStyle(key){const p=pos[key];return p?`background-position:${p.col*100/7}% ${p.row*100/6}%`:''}
+function artSvg(x){
+ const c=colorHex(x.color),dark='#17120f',light='#fff8ee';
+ const defs=`<defs><linearGradient id="g_${x.id.replace('-','_')}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${c}"/><stop offset=".55" stop-color="${c}"/><stop offset="1" stop-color="#000" stop-opacity=".16"/></linearGradient></defs>`;
+ const fill=`url(#g_${x.id.replace('-','_')})`;
+ let shape='';
+ if(x.cat==='Брюки')shape=`<path class="cloth" fill="${fill}" d="M82 36h136l12 55-28 235h-57l-13-165-12 165H63L35 91z"/><path class="seam" d="M82 36q50 18 136 0M132 48v113M73 92h45M147 92h45"/><path class="shade" d="M132 48l18 278h-20z"/>`;
+ else if(x.cat==='Шорты')shape=`<path class="cloth" fill="${fill}" d="M72 56h156l13 61-33 126h-61l-15-70-16 70H55L22 117z"/><path class="seam" d="M72 56q58 16 156 0M132 66v107M58 118h55M150 118h55"/>`;
+ else if(x.cat==='Худи')shape=`<path class="cloth" fill="${fill}" d="M88 83q44-50 88 0l31 17 39 37-24 42-29-17v139H67V162l-29 17-24-42 39-37z"/><path class="cloth" fill="${fill}" d="M92 82q3-55 40-55t40 55q-40-24-80 0z"/><path class="seam" d="M96 82q36 29 72 0M103 229h58v37h-58zM119 87v58M145 87v58"/><circle cx="119" cy="145" r="3" fill="${dark}"/><circle cx="145" cy="145" r="3" fill="${dark}"/>${x.id==='H-01'?`<text class="print" x="32" y="151" font-size="14" transform="rotate(-74 32 151)">BLACKSQUAD</text><text class="print" x="210" y="125" font-size="12" transform="rotate(72 210 125)">BLACKSQUAD</text>`:''}`;
+ else if(x.cat==='Футболки'||x.cat==='Лонгсливы'){
+  const long=x.cat==='Лонгсливы';shape=`<path class="cloth" fill="${fill}" d="M89 58l43 15 43-15 48 28 ${long?'37 159-38 13-24-113':'35 57-36 20-22-47'}v210H66V${long?'159':'116'}L44 ${long?'272 6 259':'143 9 123'}l32-37z"/><path class="seam" d="M105 65q27 42 54 0M67 116h130M90 302h84"/>${x.id==='LS-01'?'<path d="M101 119q27-39 54 0q-27 33-54 0" fill="none" stroke="'+dark+'" stroke-width="4"/>':''}`
+ }
+ else if(x.slot==='layer')shape=`<path class="cloth" fill="${fill}" d="M82 52l50 19 50-19 41 28 28 70-35 18-17-39v177H65V129l-17 39-35-18 28-70z"/><path fill="${light}" stroke="${dark}" stroke-width="3" d="M98 58l34 13-25 40-26-50zM166 58l-34 13 25 40 26-50z"/><path class="seam" d="M132 71v235M78 128h37v36H78M149 128h37v36h-37"/>${[104,139,174,209,244].map(y=>`<circle cx="132" cy="${y}" r="3" fill="${dark}"/>`).join('')}`;
+ else if(x.slot==='outer'){
+  const coat=x.id==='J-04',varsity=x.id==='J-02',blazer=x.id==='J-01';shape=`<path class="cloth" fill="${fill}" d="M81 48l51 20 51-20 44 28 31 77-37 18-20-49v${coat?210:184}H63V122l-20 49-37-18 31-77z"/>${blazer?`<path fill="${light}" stroke="${dark}" stroke-width="3" d="M96 57l36 11-25 75-29-74zM168 57l-36 11 25 75 29-74z"/>`:`<path class="seam" d="M102 58q30 28 60 0"/>`}<path class="seam" d="M132 68v${coat?330:306}M79 176h42M143 176h42"/>${varsity?`<path d="M36 78l45-30 20 18-39 247-39-17zM228 78l-45-30-20 18 39 247 39-17z" fill="#eee4d2" stroke="${dark}" stroke-width="3"/><circle cx="94" cy="126" r="18" fill="#d92e2e" stroke="${dark}" stroke-width="3"/><text class="print" x="87" y="133" font-size="19">L</text>`:''}`
+ }
+ return `<svg viewBox="0 0 264 360" aria-hidden="true">${defs}${shape}</svg>`;
+}
+function pic(key){const x=items.find(i=>i.flatKey===key);return x?`<div class="fashion-art" data-art="${x.id}">${artSvg(x)}</div>`:`<div class="pic" style="${picStyle(key)}"></div>`}'''
+          if old_pic not in h:
+              raise SystemExit('Picture renderer was not found')
+          h = h.replace(old_pic, new_pic)
 
           old_show = "function showRequest(){if(!outfitCode())return alert('Сначала выбери вещи');$('#request').style.display='block';$('#request').textContent=promptText();sound('success');vibrate([20,40,20])}"
           new_show = "async function showRequest(){if(!outfitCode())return alert('Сначала выбери вещи');const text=promptText();$('#request').style.display='block';$('#request').innerHTML='<b>Запрос готов и скопирован в буфер обмена.</b><br><br>'+text;try{await navigator.clipboard.writeText(text);$('#toast').textContent='✓ Запрос скопирован'}catch{$('#toast').textContent='Не удалось скопировать — выдели текст ниже'}$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2200);sound('success');vibrate([20,40,20])}"

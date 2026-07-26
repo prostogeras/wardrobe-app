@@ -44,6 +44,9 @@ jobs:
           .card{position:relative}.fav{position:absolute;right:8px;top:8px;z-index:4;width:38px;height:38px;padding:0;border-radius:50%;font-size:20px;background:rgba(255,255,255,.92)}
           .fav.on{background:#171717;color:#fff}.install-note{margin:0 0 12px;padding:12px 14px;background:#e7e1d8;border:1px solid var(--line);border-radius:16px;font-size:13px;line-height:1.4}
           .fallback-label{display:flex!important;align-items:center;justify-content:center;text-align:center;padding:18px;font-weight:800;color:#5f5a54;background:linear-gradient(145deg,#ece6de,#d9d1c5)!important;background-image:none!important}
+          .look-score{margin:0 0 10px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px}
+          .score-top{display:flex;align-items:center;justify-content:space-between;gap:12px}.score-number{font-size:30px;font-weight:900;letter-spacing:-.04em}.score-title{font-size:14px;font-weight:850}.score-note{margin-top:6px;font-size:12px;line-height:1.4;color:var(--muted)}
+          .occasion-row{display:flex;gap:7px;overflow:auto;margin:0 0 10px}.occasion-row button{white-space:nowrap}.occasion-row button.active{background:#6d765a;color:#fff;border-color:#6d765a}
           '''
           if '.catalog-tools{' not in html:
               html = html.replace('</style>', extra_css + '</style>')
@@ -51,6 +54,10 @@ jobs:
           tools = '''<div class="install-note">На iPhone открой сайт в Safari и нажми «Поделиться» → «На экран Домой».</div><div class="catalog-tools"><input id="search" type="search" placeholder="Поиск по названию, цвету или коду"><div class="catalog-count" id="catalogCount">25 вещей</div></div>'''
           if 'id="search"' not in html:
               html = html.replace('<div class="toolbar" id="filters"></div>', tools + '<div class="toolbar" id="filters"></div>')
+
+          if 'id="shareLook"' not in html:
+              html = html.replace('<button class="primary" id="tryon" style="grid-column:1/-1">Примерить реалистично</button>', '<button class="primary" id="tryon" style="grid-column:1/-1">Примерить реалистично</button><button id="shareLook" style="grid-column:1/-1">Поделиться образом</button>')
+              html = html.replace('<div id="pickers"></div>', '<div class="occasion-row" id="occasionRow"><button class="active" data-occ="Повседневный">Повседневный</button><button data-occ="Работа">Работа</button><button data-occ="Свидание">Свидание</button><button data-occ="Съёмка">Съёмка</button><button data-occ="Прогулка">Прогулка</button></div><div class="look-score" id="lookScore"><div class="score-top"><div><div class="score-title">Оценка сочетания</div><div class="score-note" id="scoreNote">Выбери вещи, чтобы получить оценку.</div></div><div class="score-number" id="scoreNumber">—</div></div></div><div id="pickers"></div>')
 
           enhancement_js = r'''
           const originalPic = pic;
@@ -61,8 +68,32 @@ jobs:
           }
           pic = safePic;
           let searchText='';
+          let occasion='Повседневный';
           const favorites=new Set(JSON.parse(localStorage.getItem('kostyaFavs')||'[]'));
-          const baseRenderCatalog=renderCatalog;
+          const neutralWords=['чёрн','бел','сер','графит','олив','молоч','беж'];
+          const warmWords=['горч','роз','крас'];
+          const coolWords=['голуб'];
+          function colorGroup(x){const c=(x?.color||'').toLowerCase();if(neutralWords.some(w=>c.includes(w)))return 'neutral';if(warmWords.some(w=>c.includes(w)))return 'warm';if(coolWords.some(w=>c.includes(w)))return 'cool';return 'other'}
+          function scoreLook(){
+            const chosen=['outer','layer','top','bottom'].map(s=>byId(selected[s])).filter(Boolean);
+            if(chosen.length<2)return {score:null,note:'Добавь хотя бы две вещи.'};
+            let score=72;
+            const groups=chosen.map(colorGroup);
+            const neutrals=groups.filter(g=>g==='neutral').length;
+            if(neutrals>=2)score+=10;
+            if(new Set(groups.filter(g=>g!=='neutral')).size<=1)score+=6;
+            if(groups.includes('warm')&&groups.includes('cool'))score-=8;
+            if(selected.outer&&selected.layer&&selected.top)score+=3;
+            const styles=chosen.map(x=>x.style.toLowerCase()).join(' ');
+            if(occasion==='Работа'&&(styles.includes('smart')||styles.includes('minimal')))score+=8;
+            if(occasion==='Свидание'&&(styles.includes('smart')||styles.includes('minimal')))score+=7;
+            if(occasion==='Съёмка'&&(styles.includes('street')||styles.includes('statement')||styles.includes('japanese')))score+=8;
+            if(occasion==='Прогулка'&&(styles.includes('casual')||styles.includes('utility')||styles.includes('outdoor')))score+=7;
+            score=Math.max(45,Math.min(98,score));
+            const note=score>=90?'Очень цельный образ: цвета и стилистика хорошо поддерживают друг друга.':score>=80?'Удачное сочетание. Можно носить без дополнительных изменений.':score>=70?'Хорошая база, но один слой или аксессуар может сделать образ собраннее.':'Сочетание спорное: попробуй заменить одну акцентную вещь на нейтральную.';
+            return {score,note};
+          }
+          function updateScore(){const r=scoreLook();const n=$('#scoreNumber'),t=$('#scoreNote');if(n)n.textContent=r.score?`${r.score}/100`:'—';if(t)t.textContent=r.note}
           renderCatalog=function(){
             const cats=['Все','Избранное',...new Set(items.map(x=>x.cat))];
             $('#filters').innerHTML=cats.map(c=>`<button class="${c===active?'active':''}" data-c="${c}">${c}</button>`).join('');
@@ -74,14 +105,15 @@ jobs:
             document.querySelectorAll('[data-open]').forEach(el=>el.onclick=()=>openItem(el.dataset.open));
             document.querySelectorAll('[data-add]').forEach(el=>el.onclick=()=>{const x=byId(el.dataset.add);selected[x.slot]=x.id;renderBuilder();document.querySelector('[data-view=builder]').click()});
             document.querySelectorAll('[data-fav]').forEach(el=>el.onclick=e=>{e.stopPropagation();const id=el.dataset.fav;favorites.has(id)?favorites.delete(id):favorites.add(id);localStorage.setItem('kostyaFavs',JSON.stringify([...favorites]));renderCatalog()});
-            setTimeout(()=>document.querySelectorAll('.pic').forEach(el=>{
-              const bg=getComputedStyle(el).backgroundImage;
-              if(bg==='none' || !pos[el.dataset.key]){el.classList.add('fallback-label');el.innerHTML=el.dataset.label||'Фото';}
-            }),50);
+            setTimeout(()=>document.querySelectorAll('.pic').forEach(el=>{if(!pos[el.dataset.key]){el.classList.add('fallback-label');el.innerHTML=el.dataset.label||'Фото';}}),50);
           };
+          const originalRenderBuilder=renderBuilder;
+          renderBuilder=function(){originalRenderBuilder();updateScore();document.querySelectorAll('#occasionRow button').forEach(b=>{b.classList.toggle('active',b.dataset.occ===occasion);b.onclick=()=>{occasion=b.dataset.occ;renderBuilder()}})};
           const search=$('#search');
           if(search){search.addEventListener('input',()=>{searchText=search.value;renderCatalog()});}
-          renderCatalog();
+          const share=$('#shareLook');
+          if(share)share.onclick=async()=>{const text=`Образ: ${code()||'вещи не выбраны'} · ${occasion}`;if(navigator.share){try{await navigator.share({title:'Гардероб Кости',text})}catch(e){}}else{try{await navigator.clipboard.writeText(text);alert('Описание образа скопировано')}catch(e){}}};
+          renderCatalog();renderBuilder();
           '''
           if 'kostyaFavs' not in html:
               html = html.replace("nav();renderCatalog();renderBuilder();", "nav();renderCatalog();renderBuilder();\n" + enhancement_js)

@@ -1,5 +1,5 @@
-const CACHE='wardrobe-v4';
-const CORE=['./','./index.html','./manifest.webmanifest','./icon.svg','./weather-widget.js','./builder-v2.js'];
+const CACHE='wardrobe-v5';
+const CORE=['./','./index.html','./manifest.webmanifest','./icon.svg','./weather-widget.js','./builder-v2.js','./add-tab.js'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)));

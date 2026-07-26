@@ -1,5 +1,5 @@
-const CACHE='wardrobe-v3';
-const CORE=['./','./index.html','./manifest.webmanifest','./icon.svg','./weather-widget.js'];
+const CACHE='wardrobe-v4';
+const CORE=['./','./index.html','./manifest.webmanifest','./icon.svg','./weather-widget.js','./builder-v2.js'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)));
@@ -25,7 +25,7 @@ self.addEventListener('fetch',event=>{
     return;
   }
 
-  event.respondWith(fetch(event.request).then(response=>{
+  event.respondWith(fetch(event.request,{cache:'no-store'}).then(response=>{
     if(response.ok){
       const copy=response.clone();
       caches.open(CACHE).then(cache=>cache.put(event.request,copy));

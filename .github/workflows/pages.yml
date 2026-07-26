@@ -33,7 +33,8 @@ jobs:
           h=p.read_text(encoding='utf-8')
           tags=[
               '<script src="./weather-widget.js?v=3"></script>',
-              '<script src="./builder-v2.js?v=1"></script>'
+              '<script src="./builder-v2.js?v=1"></script>',
+              '<script src="./add-tab.js?v=1"></script>'
           ]
           for tag in tags:
               if tag not in h:
@@ -46,6 +47,7 @@ jobs:
         run: |
           node --check weather-widget.js
           node --check builder-v2.js
+          node --check add-tab.js
           python - <<'PY'
           from pathlib import Path
           import re

@@ -32,15 +32,21 @@ jobs:
           html = path.read_text(encoding='utf-8')
 
           # The sprite is an exact 8 × 7 grid of 300 × 380 px cells.
-          # Force both axes to the grid size. Using `800% auto` made Safari
-          # derive the vertical scale from square cards, which broke cropping.
           html = html.replace(
               "aspect-ratio:1;background:#e8e3db url('wardrobe_sprite.webp') no-repeat;background-size:800% auto",
-              "aspect-ratio:300/380;background:#e8e3db url('wardrobe_sprite.webp?v=3') no-repeat;background-size:800% 700%"
+              "aspect-ratio:300/380;background:#e8e3db url('wardrobe_sprite.webp?v=4') no-repeat;background-size:800% 700%"
           )
           html = html.replace(
               "background:#ddd url('wardrobe_sprite.webp') no-repeat;background-size:800% auto",
-              "background:#ddd url('wardrobe_sprite.webp?v=3') no-repeat;background-size:800% 700%"
+              "background:#ddd url('wardrobe_sprite.webp?v=4') no-repeat;background-size:800% 700%"
+          )
+
+          # With an oversized CSS background, positive percentages move the
+          # image left/up because positioning uses (container - image size).
+          # The old negative values pushed every cell except the first outside.
+          html = html.replace(
+              "return `background-position:${-col*100/7}% ${-row*100/6}%`;",
+              "return `background-position:${col*100/7}% ${row*100/6}%`;"
           )
 
           if 'manifest.webmanifest' not in html:

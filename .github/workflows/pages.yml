@@ -23,6 +23,54 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Prepare mobile builder v3
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          h = p.read_text(encoding='utf-8')
+
+          h = h.replace(
+            '*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--text)}',
+            '*{box-sizing:border-box;min-width:0}html{background:var(--bg);overflow-x:hidden}body{margin:0;width:100%;max-width:100%;overflow-x:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--text)}'
+          )
+          h = h.replace(
+            'nav{position:sticky;top:0;z-index:20;display:flex;gap:8px;padding:10px 12px;background:rgba(244,241,235,.96);backdrop-filter:blur(16px);border-block:1px solid var(--line);overflow:auto}nav button{white-space:nowrap}',
+            'nav{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 12px;background:rgba(244,241,235,.96);backdrop-filter:blur(16px);border-block:1px solid var(--line);overflow:hidden}nav button{white-space:normal;padding:10px 7px;font-size:14px}'
+          )
+          h = h.replace(
+            '.toolbar{display:flex;gap:8px;overflow:auto;margin-bottom:12px}',
+            '.toolbar{display:flex;flex-wrap:wrap;gap:8px;overflow:hidden;margin-bottom:12px}'
+          )
+          h = h.replace(
+            '.occasion-row{display:flex;gap:7px;overflow:auto;margin-bottom:10px}.occasion-row button{white-space:nowrap}',
+            '.occasion-row{display:flex;flex-wrap:wrap;gap:7px;overflow:hidden;margin-bottom:10px}.occasion-row button{white-space:normal;flex:1 1 auto}'
+          )
+          h = h.replace(
+            '.icon-row{display:flex;gap:8px;overflow:auto;padding-bottom:2px}.icon-pick{flex:0 0 78px;border-radius:14px;padding:8px 5px;background:#eee9e1;border:2px solid transparent}.icon-pick.active{border-color:#171717;background:#fff}.icon-pick .pixel-icon{width:42px;height:42px;margin:auto;border:3px solid #171717;border-radius:5px;display:grid;place-items:center;font-size:22px;image-rendering:pixelated}.icon-pick b{display:block;font-size:9px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.icon-pick small{display:block;font-size:8px;color:var(--muted)}',
+            '.icon-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;overflow:hidden;padding-bottom:2px}.icon-pick{width:100%;min-width:0;border-radius:14px;padding:6px 4px;background:#eee9e1;border:2px solid transparent}.icon-pick.active{border-color:#171717;background:#fff}.icon-pick .thumb{width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;background:#ddd}.icon-pick .thumb .pic{height:100%;aspect-ratio:1}.icon-pick b{display:block;font-size:9px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.icon-pick small{display:block;font-size:8px;color:var(--muted);line-height:1.15;height:28px;overflow:hidden}'
+          )
+          h = h.replace(
+            '.pixel-stage{margin-top:12px;min-height:218px;border-radius:18px;background:linear-gradient(180deg,#eee8de,#ddd4c7);display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden}.pixel-person{width:150px;display:grid;justify-items:center;gap:4px;image-rendering:pixelated}.px-head{width:42px;height:42px;background:#d5a27c;box-shadow:0 0 0 6px #3e332e;border-radius:4px}.px-body{width:112px;height:74px;border:6px solid #171717;background:#ddd;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:34px}.px-legs{display:flex;gap:10px}.px-leg{width:44px;height:76px;border:6px solid #171717;background:#bbb;border-radius:5px}',
+            '.pixel-stage{margin-top:12px;min-height:250px;border-radius:18px;background:linear-gradient(180deg,#f5efe7,#ded3c5);display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden}.cartoon-person{position:relative;width:150px;height:218px}.cartoon-head{position:absolute;left:48px;top:4px;width:54px;height:64px;background:#d5a27c;border-radius:45% 45% 48% 48%;border:3px solid #2d2926}.cartoon-hair{position:absolute;left:45px;top:0;width:60px;height:32px;background:#3d302a;border-radius:55% 55% 35% 35%;z-index:2}.cartoon-eye{position:absolute;top:31px;width:5px;height:5px;background:#241f1c;border-radius:50%;z-index:3}.cartoon-eye.left{left:62px}.cartoon-eye.right{right:62px}.cartoon-mouth{position:absolute;left:70px;top:48px;width:12px;height:5px;border-bottom:2px solid #7a4d45;border-radius:50%;z-index:3}.cartoon-body{position:absolute;left:30px;top:63px;width:90px;height:86px;border:3px solid #2d2926;border-radius:22px 22px 14px 14px;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:30px}.cartoon-arm{position:absolute;top:73px;width:24px;height:90px;background:#d5a27c;border:3px solid #2d2926;border-radius:14px}.cartoon-arm.left{left:10px;transform:rotate(7deg)}.cartoon-arm.right{right:10px;transform:rotate(-7deg)}.cartoon-legs{position:absolute;left:37px;top:145px;display:flex;gap:12px}.cartoon-leg{width:32px;height:70px;border:3px solid #2d2926;background:#bbb;border-radius:10px 10px 14px 14px}'
+          )
+          h = h.replace(
+            '<div class="pixel-stage"><div class="pixel-person"><div class="px-head"></div><div class="px-body" id="pxBody">👕</div><div class="px-legs"><div class="px-leg" id="pxLeg1"></div><div class="px-leg" id="pxLeg2"></div></div></div></div>',
+            '<div class="pixel-stage"><div class="cartoon-person"><div class="cartoon-hair"></div><div class="cartoon-head"></div><div class="cartoon-eye left"></div><div class="cartoon-eye right"></div><div class="cartoon-mouth"></div><div class="cartoon-arm left"></div><div class="cartoon-arm right"></div><div class="cartoon-body" id="pxBody">👕</div><div class="cartoon-legs"><div class="cartoon-leg" id="pxLeg1"></div><div class="cartoon-leg" id="pxLeg2"></div></div></div></div>'
+          )
+          h = h.replace('Пиксельный предпросмотр','Мультяшный предпросмотр')
+          h = h.replace(
+            'a.map(x=>`<button class="icon-pick ${selected[s]===x.id?\'active\':\'\'}" data-id="${x.id}"><div class="pixel-icon" style="background:${colorHex(x.color)}">${slotEmoji[s]}</div><b>${x.id}</b><small>${x.name}</small></button>`).join(\'\')',
+            'a.map(x=>`<button class="icon-pick ${selected[s]===x.id?\'active\':\'\'}" data-id="${x.id}"><div class="thumb">${pic(x.flatKey)}</div><b>${x.id}</b><small>${x.name}</small></button>`).join(\'\')'
+          )
+          h = h.replace(
+            'return `Создай реалистичную фотографию меня в комплекте ${outfitCode()} из моего цифрового гардероба. Вещи: ${chosen.map(x=>x.name).join(\', \')}. Сохрани мою внешность, телосложение, татуировки, естественную посадку и реальные цвета вещей. Полный рост, фронтальный ракурс, нейтральное освещение.`',
+            'return `Создай максимально фотореалистичную фотографию меня в комплекте ${outfitCode()} из моего цифрового гардероба. Вещи: ${chosen.map(x=>x.name).join(\', \')}. Используй мои загруженные фотографии как строгий референс личности и фигуры. Не изменяй лицо: сохрани форму головы, черты лица, глаза, нос, губы, линию челюсти, причёску и возраст без улучшения, омоложения или стилизации. Не изменяй пропорции тела, рост, вес, объём живота, плеч, рук и ног. Точно сохрани расположение, форму и масштаб всех видимых татуировок. Одежду воспроизведи максимально близко к оригинальным фотографиям: точный цвет, материал, принты, логотипы, длина, объём, крой и естественная посадка на моей фигуре. Не делай тело стройнее и не меняй фасон вещей. Полный рост, строго фронтальный ракурс, естественная поза, нейтральное мягкое освещение, реалистичная кожа, без ретуши и без изменения личности.`'
+          )
+          h = h.replace("wardrobe_sprite.webp?v=5","wardrobe_sprite.webp?v=6")
+          p.write_text(h, encoding='utf-8')
+          PY
       - name: Validate JavaScript
         shell: bash
         run: |

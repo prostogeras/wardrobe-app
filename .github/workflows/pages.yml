@@ -32,38 +32,36 @@ jobs:
           p = Path('index.html')
           h = p.read_text(encoding='utf-8')
 
-          h = h.replace('<title>MY.STYLE — Гардероб Кости</title>', '<title>LUK. — Гардероб Кости</title>')
-          h = h.replace('MY<span class="splash-dot">.</span>STYLE', 'LUK<span class="splash-dot">.</span>')
-          h = h.replace('<div class="splash-tag">гардероб Кости</div>', '<div class="splash-tag">соберём лук, сучечка?</div>')
-          h = h.replace('<div class="brand">MY<em>.</em>STYLE</div>', '<div class="brand">LUK<em>.</em></div>')
-          h = h.replace('<div class="eyebrow">Персональный цифровой гардероб</div><h1>Твой гардероб.<span>Твой стиль.</span></h1>', '<div class="eyebrow">Персональная лаборатория образов</div><h1>Соберём лук,<span>сучечка?</span></h1>')
-          h = h.replace('Собирай комплекты из своей одежды, сохраняй удачные идеи и готовь точный запрос для реалистичной примерки.', 'Смешивай вещи, сохраняй удачные сочетания и собирай образ без лишней серьёзности.')
-          h = h.replace('Подобрать образ <span>↗</span>', 'Собрать лук <span>↗</span>')
-          h = h.replace('давай соберём<br>классный лук!', 'соберём лук,<br>сучечка?')
-          h = h.replace('<b>Мультяшный предпросмотр</b>', '<b>Твой лук</b>')
+          replacements = [
+              ('<title>MY.STYLE — Гардероб Кости</title>', '<title>LUK. — Гардероб Кости</title>'),
+              ('MY<span class="splash-dot">.</span>STYLE', 'LUK<span class="splash-dot">.</span>'),
+              ('<div class="splash-tag">гардероб Кости</div>', '<div class="splash-tag">соберём лук, сучечка?</div>'),
+              ('<div class="brand">MY<em>.</em>STYLE</div>', '<div class="brand">LUK<em>.</em></div>'),
+              ('<div class="eyebrow">Персональный цифровой гардероб</div><h1>Твой гардероб.<span>Твой стиль.</span></h1>', '<div class="eyebrow">Персональная лаборатория образов</div><h1>Соберём лук,<span>сучечка?</span></h1>'),
+              ('Собирай комплекты из своей одежды, сохраняй удачные идеи и готовь точный запрос для реалистичной примерки.', 'Смешивай вещи, сохраняй удачные сочетания и собирай образ без лишней серьёзности.'),
+              ('Подобрать образ <span>↗</span>', 'Собрать лук <span>↗</span>'),
+              ('давай соберём<br>классный лук!', 'соберём лук,<br>сучечка?'),
+              ('<b>Мультяшный предпросмотр</b>', '<b>Твой лук</b>'),
+              ('wardrobe_sprite.webp?v=7', 'wardrobe_sprite.webp?v=8')
+          ]
+          for old, new in replacements:
+              h = h.replace(old, new)
 
           old_actions = '<div class="selected" id="selectedStrip"></div></aside><div><div class="occasion" id="occasions"></div><div class="score"><div><b>Оценка сочетания</b><small id="scoreNote">Выбери хотя бы две вещи.</small></div><strong id="scoreNumber">—</strong></div><div id="pickers"></div><div class="actions"><button id="random">Случайный образ</button><button id="save">Сохранить</button><button class="primary" id="tryon">Создать запрос на примерку</button><button id="copy">Скопировать запрос</button></div><div class="request" id="request"></div>'
           new_actions = '<div class="selected" id="selectedStrip"></div><div class="preview-actions"><button id="random">Случайный образ</button><button id="save">Сохранить</button><button class="primary" id="tryon">Создать запрос на примерку</button></div></aside><div><div class="occasion" id="occasions"></div><div class="score"><div><b>Оценка сочетания</b><small id="scoreNote">Выбери хотя бы две вещи.</small></div><strong id="scoreNumber">—</strong></div><div id="pickers"></div><div class="request" id="request"></div>'
-          if old_actions not in h:
-              raise SystemExit('Builder action block was not found')
           h = h.replace(old_actions, new_actions)
 
-          css_insert = '''
-.preview-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.preview-actions button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:13px 9px;font-weight:900}.preview-actions .primary{grid-column:1/-1;background:#111;color:#fff;border-color:#111;box-shadow:0 5px 0 var(--lime)}
-.pic{position:relative;isolation:isolate;filter:saturate(1.22) contrast(1.08) brightness(1.03);background-color:#f6f1e9!important}.pic:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,rgba(255,255,255,.08) 0 2px,rgba(0,0,0,.035) 2px 3px,transparent 3px 8px);mix-blend-mode:soft-light;opacity:.8}.card>.pic,.thumb .pic,.viewer .pic,.collage-card{filter:saturate(1.25) contrast(1.1) brightness(1.04);box-shadow:inset 0 0 0 2px rgba(17,17,17,.06)}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:500;transform:translate(-50%,20px);background:#111;color:#fff;border:2px solid var(--lime);border-radius:999px;padding:13px 18px;font-weight:900;opacity:0;pointer-events:none;transition:.28s;box-shadow:0 15px 45px rgba(0,0,0,.24);white-space:nowrap}.toast.show{opacity:1;transform:translate(-50%,0)}
-'''
-          h = h.replace('@media(max-width:760px){', css_insert + '@media(max-width:760px){')
-          h = h.replace('<div class="modal" id="modal">', '<div class="toast" id="toast">Запрос скопирован</div><div class="modal" id="modal">')
+          css_insert = '.preview-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.preview-actions button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:13px 9px;font-weight:900}.preview-actions .primary{grid-column:1/-1;background:#111;color:#fff;border-color:#111;box-shadow:0 5px 0 var(--lime)}.pic{position:relative;isolation:isolate;filter:saturate(1.22) contrast(1.08) brightness(1.03);background-color:#f6f1e9!important}.pic:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(115deg,rgba(255,255,255,.08) 0 2px,rgba(0,0,0,.035) 2px 3px,transparent 3px 8px);mix-blend-mode:soft-light;opacity:.8}.card>.pic,.thumb .pic,.viewer .pic,.collage-card{filter:saturate(1.25) contrast(1.1) brightness(1.04);box-shadow:inset 0 0 0 2px rgba(17,17,17,.06)}.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:500;transform:translate(-50%,20px);background:#111;color:#fff;border:2px solid var(--lime);border-radius:999px;padding:13px 18px;font-weight:900;opacity:0;pointer-events:none;transition:.28s;box-shadow:0 15px 45px rgba(0,0,0,.24);white-space:nowrap}.toast.show{opacity:1;transform:translate(-50%,0)}'
+          if '.preview-actions{' not in h:
+              h = h.replace('@media(max-width:760px){', css_insert + '@media(max-width:760px){')
+          if 'id="toast"' not in h:
+              h = h.replace('<div class="modal" id="modal">', '<div class="toast" id="toast">Запрос скопирован</div><div class="modal" id="modal">')
 
           old_show = "function showRequest(){if(!outfitCode())return alert('Сначала выбери вещи');$('#request').style.display='block';$('#request').textContent=promptText();sound('success');vibrate([20,40,20])}"
           new_show = "async function showRequest(){if(!outfitCode())return alert('Сначала выбери вещи');const text=promptText();$('#request').style.display='block';$('#request').innerHTML='<b>Запрос готов и скопирован в буфер обмена.</b><br><br>'+text;try{await navigator.clipboard.writeText(text);$('#toast').textContent='✓ Запрос скопирован'}catch{$('#toast').textContent='Не удалось скопировать — выдели текст ниже'}$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2200);sound('success');vibrate([20,40,20])}"
-          if old_show not in h:
-              raise SystemExit('showRequest function was not found')
           h = h.replace(old_show, new_show)
-
           h = h.replace("$('#tryon').onclick=showRequest;$('#copy').onclick=async()=>{showRequest();try{await navigator.clipboard.writeText(promptText());alert('Запрос скопирован')}catch{}};", "$('#tryon').onclick=showRequest;")
-          h = h.replace("wardrobe_sprite.webp?v=7", "wardrobe_sprite.webp?v=8")
+
           p.write_text(h, encoding='utf-8')
           PY
 

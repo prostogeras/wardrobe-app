@@ -1,0 +1,19 @@
+{
+  "name": "Гардероб Кости",
+  "short_name": "Гардероб",
+  "description": "Персональный цифровой гардероб и конструктор образов",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f1eb",
+  "theme_color": "#171717",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

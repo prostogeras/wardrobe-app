@@ -37,17 +37,14 @@ jobs:
           from pathlib import Path
           import json
           from PIL import Image
-
           expected=['B-01','B-02','B-03','B-04','T-01','T-02','T-03','T-04','T-05','H-01','H-02','S-01','S-02','S-03','S-04','LS-01','LS-02','SH-01','SH-02','SH-03','SH-04','J-01','J-02','J-03','J-04']
           manifest=json.loads(Path('wardrobe_icons.json').read_text(encoding='utf-8'))
           actual=list(manifest['items'].keys())
-          assert actual==expected, f'Icon order mismatch: {actual}'
-          assert len(set(actual))==25, 'Duplicate clothing IDs in icon manifest'
+          assert actual==expected
+          assert len(set(actual))==25
           for index,item_id in enumerate(expected):
-              target=manifest['items'][item_id]['target']
-              assert target=={'col':index%5,'row':index//5}, f'Wrong target cell for {item_id}: {target}'
-          image=Image.open('wardrobe_icons.webp')
-          assert image.size==(1500,1900), f'Wrong sprite size: {image.size}'
+              assert manifest['items'][item_id]['target']=={'col':index%5,'row':index//5}
+          assert Image.open('wardrobe_icons.webp').size==(1500,1900)
           print('Validated 25 unique IDs and all target cells')
           PY
 
@@ -61,7 +58,7 @@ jobs:
           tags=[
               '<script src="./weather-widget.js?v=3"></script>',
               '<script src="./builder-v2.js?v=1"></script>',
-              '<script src="./add-tab.js?v=1"></script>',
+              '<script src="./add-tab.js?v=2"></script>',
               '<script src="./profile-current.js?v=1"></script>',
               '<script src="./home-layout-v2.js?v=1"></script>',
               '<script src="./icons-v4.js?v=2"></script>'

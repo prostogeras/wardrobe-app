@@ -1,5 +1,4 @@
 from pathlib import Path
-import math
 import cv2
 import numpy as np
 from PIL import Image, ImageFilter, ImageDraw
@@ -105,8 +104,10 @@ def cartoonize(rgb: np.ndarray) -> np.ndarray:
     quant = cv2.resize(quant, (rgb.shape[1], rgb.shape[0]), interpolation=cv2.INTER_CUBIC)
 
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
-    edges = cv2.adaptiveThreshold(cv2.medianBlur(gray, 5), 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                  cv2.THRESH_BINARY,  nine := 9, 7)
+    edges = cv2.adaptiveThreshold(
+        cv2.medianBlur(gray, 5), 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+        cv2.THRESH_BINARY, 9, 7
+    )
     edges = 255 - edges
     edges = cv2.dilate(edges, np.ones((2, 2), np.uint8), iterations=1)
     edge_alpha = (edges.astype(np.float32) / 255.0 * .68)[..., None]
@@ -131,27 +132,38 @@ def render_icon(crop: Image.Image) -> Image.Image:
 
     max_w, max_h = 252, 322
     scale = min(max_w / max(1, subject.width), max_h / max(1, subject.height))
-    subject = subject.resize((max(1, int(subject.width * scale)), max(1, int(subject.height * scale))), Image.Resampling.LANCZOS)
+    subject = subject.resize(
+        (max(1, int(subject.width * scale)), max(1, int(subject.height * scale))),
+        Image.Resampling.LANCZOS,
+    )
 
     bg = Image.new("RGBA", (CELL_W, CELL_H), (248, 245, 238, 255))
     draw = ImageDraw.Draw(bg)
-    for r, alpha in [(150, 18), (112, 14), (76, 10)]:
-        draw.ellipse((150-r, 190-r*.55, 150+r, 190+r*.55), fill=(229, 214, 190, alpha))
+    for radius, alpha in [(150, 18), (112, 14), (76, 10)]:
+        draw.ellipse(
+            (150 - radius, 190 - radius * .55, 150 + radius, 190 + radius * .55),
+            fill=(229, 214, 190, alpha),
+        )
 
     shadow = Image.new("RGBA", subject.size, (0, 0, 0, 0))
     shadow.putalpha(subject.getchannel("A").filter(ImageFilter.GaussianBlur(8)))
     shadow_rgb = Image.new("RGBA", subject.size, (42, 30, 18, 70))
-    shadow_rgb.putalpha(shadow.getchannel("A").point(lambda v: int(v * .30)))
+    shadow_rgb.putalpha(shadow.getchannel("A").point(lambda value: int(value * .30)))
 
     px = (CELL_W - subject.width) // 2
     py = (CELL_H - subject.height) // 2 + 4
     bg.alpha_composite(shadow_rgb, (px + 5, py + 10))
-    bg.alpha_composite(subject, (px, py))
 
-    # Fine illustrated contour around the isolated garment.
     alpha = np.array(subject.getchannel("A"))
-    outline = cv2.dilate((alpha > 35).astype(np.uint8) * 255, np.ones((3, 3), np.uint8), iterations=1)
-    outline = np.maximum(0, outline.astype(np.int16) - (alpha > 35).astype(np.int16) * 255).astype(np.uint8)
+    outline = cv2.dilate(
+        (alpha > 35).astype(np.uint8) * 255,
+        np.ones((3, 3), np.uint8),
+        iterations=1,
+    )
+    outline = np.maximum(
+        0,
+        outline.astype(np.int16) - (alpha > 35).astype(np.int16) * 255,
+    ).astype(np.uint8)
     outline_img = Image.new("RGBA", subject.size, (35, 27, 20, 0))
     outline_img.putalpha(Image.fromarray((outline * .62).astype(np.uint8)))
     bg.alpha_composite(outline_img, (px, py))
@@ -162,15 +174,17 @@ def render_icon(crop: Image.Image) -> Image.Image:
 def main():
     if not SOURCE.exists():
         raise SystemExit(f"Missing source sprite: {SOURCE}")
-    src = Image.open(SOURCE).convert("RGB")
+    source = Image.open(SOURCE).convert("RGB")
     positions = flat_positions()
     canvas = Image.new("RGB", (OUT_COLS * CELL_W, OUT_ROWS * CELL_H), (248, 245, 238))
 
-    for idx, (item_id, _) in enumerate(ITEMS):
+    for index, (item_id, _) in enumerate(ITEMS):
         col, row = positions[item_id]
-        crop = src.crop((col * CELL_W, row * CELL_H, (col + 1) * CELL_W, (row + 1) * CELL_H))
+        crop = source.crop(
+            (col * CELL_W, row * CELL_H, (col + 1) * CELL_W, (row + 1) * CELL_H)
+        )
         icon = render_icon(crop)
-        out_col, out_row = idx % OUT_COLS, idx // OUT_COLS
+        out_col, out_row = index % OUT_COLS, index // OUT_COLS
         canvas.paste(icon, (out_col * CELL_W, out_row * CELL_H))
 
     canvas.save(OUTPUT, "WEBP", quality=90, method=6)

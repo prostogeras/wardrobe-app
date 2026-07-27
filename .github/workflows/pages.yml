@@ -24,11 +24,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate stylized clothing icons from original photos
+      - name: Generate ID-safe cartoon clothing sprite
         shell: bash
         run: |
           python -m pip install --quiet pillow numpy opencv-python-headless
           python scripts/generate_clothing_icons.py
+
+      - name: Validate sprite mapping
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          from PIL import Image
+
+          expected=['B-01','B-02','B-03','B-04','T-01','T-02','T-03','T-04','T-05','H-01','H-02','S-01','S-02','S-03','S-04','LS-01','LS-02','SH-01','SH-02','SH-03','SH-04','J-01','J-02','J-03','J-04']
+          manifest=json.loads(Path('wardrobe_icons.json').read_text(encoding='utf-8'))
+          actual=list(manifest['items'].keys())
+          assert actual==expected, f'Icon order mismatch: {actual}'
+          assert len(set(actual))==25, 'Duplicate clothing IDs in icon manifest'
+          for index,item_id in enumerate(expected):
+              target=manifest['items'][item_id]['target']
+              assert target=={'col':index%5,'row':index//5}, f'Wrong target cell for {item_id}: {target}'
+          image=Image.open('wardrobe_icons.webp')
+          assert image.size==(1500,1900), f'Wrong sprite size: {image.size}'
+          print('Validated 25 unique IDs and all target cells')
+          PY
 
       - name: Include app enhancements
         shell: bash
@@ -43,7 +64,7 @@ jobs:
               '<script src="./add-tab.js?v=1"></script>',
               '<script src="./profile-current.js?v=1"></script>',
               '<script src="./home-layout-v2.js?v=1"></script>',
-              '<script src="./icons-v4.js?v=1"></script>'
+              '<script src="./icons-v4.js?v=2"></script>'
           ]
           for tag in tags:
               if tag not in h:
@@ -61,6 +82,7 @@ jobs:
           node --check home-layout-v2.js
           node --check icons-v4.js
           test -s wardrobe_icons.webp
+          test -s wardrobe_icons.json
           python - <<'PY'
           from pathlib import Path
           import re

@@ -61,7 +61,8 @@ jobs:
               '<script src="./add-simple-v3.js?v=1"></script>',
               '<script src="./profile-current.js?v=1"></script>',
               '<script src="./home-layout-v2.js?v=1"></script>',
-              '<script src="./icons-v4.js?v=2"></script>'
+              '<script src="./icons-v4.js?v=2"></script>',
+              '<script src="./swipe-tabs.js?v=1"></script>'
           ]
           for tag in tags:
               if tag not in h:
@@ -79,6 +80,7 @@ jobs:
           node --check profile-current.js
           node --check home-layout-v2.js
           node --check icons-v4.js
+          node --check swipe-tabs.js
           test -s wardrobe_icons.webp
           test -s wardrobe_icons.json
           python - <<'PY'

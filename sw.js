@@ -1,4 +1,4 @@
-const CACHE='wardrobe-v9';
+const CACHE='wardrobe-v10';
 const CORE=['./','./index.html','./manifest.webmanifest','./icon.svg','./weather-widget.js','./builder-v2.js','./add-tab.js','./profile-current.js','./home-layout-v2.js','./icons-v4.js','./wardrobe_icons.webp','./wardrobe_icons.json'];
 
 self.addEventListener('install',event=>{
@@ -15,7 +15,6 @@ self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET') return;
   const url=new URL(event.request.url);
   if(url.origin!==self.location.origin) return;
-
   if(event.request.mode==='navigate'){
     event.respondWith(fetch(event.request,{cache:'no-store'}).then(response=>{
       const copy=response.clone();
@@ -24,7 +23,6 @@ self.addEventListener('fetch',event=>{
     }).catch(()=>caches.match('./index.html')));
     return;
   }
-
   event.respondWith(fetch(event.request,{cache:'no-store'}).then(response=>{
     if(response.ok){
       const copy=response.clone();
